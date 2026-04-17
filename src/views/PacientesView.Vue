@@ -23,7 +23,6 @@ function verHistorial(pacienteId: string) {
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
     <div
       class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
     >
@@ -35,16 +34,10 @@ function verHistorial(pacienteId: string) {
           {{ totalPacientes }} pacientes registrados
         </p>
       </div>
-      <Button @click="mostrarFormulario = true" size="md">
-        <Plus class="w-4 h-4" />
-        Registrar Nuevo
-      </Button>
     </div>
 
-    <!-- Filters -->
     <div class="bg-white rounded-xl shadow-sm border border-neutral-200 p-4">
       <div class="flex flex-col sm:flex-row gap-4">
-        <!-- Search -->
         <div class="relative flex-1 group">
           <div
             class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10"
@@ -66,7 +59,6 @@ function verHistorial(pacienteId: string) {
           />
         </div>
 
-        <!-- Last visit filter -->
         <select
           :value="filtros.ultimaVisita"
           @change="
@@ -88,11 +80,9 @@ function verHistorial(pacienteId: string) {
       </div>
     </div>
 
-    <!-- Patients Table -->
     <div
       class="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden"
     >
-      <!-- Empty State -->
       <div
         v-if="pacientesFiltrados.length === 0"
         class="py-16 px-4 text-center"
@@ -117,7 +107,6 @@ function verHistorial(pacienteId: string) {
         </Button>
       </div>
 
-      <!-- Table -->
       <PacientesTable v-else @view-history="verHistorial" />
     </div>
   </div>

@@ -2,7 +2,8 @@
 import { storeToRefs } from 'pinia'
 import { usePacienteStore } from '@/stores/pacienteStore'
 import Badge from '@/components/ui/Badge.vue'
-import { Phone, ChevronRight } from 'lucide-vue-next'
+// Cambiamos ChevronRight por ClipboardList para que sea más representativo de una historia médica
+import { Phone, FileText, ChevronRight } from 'lucide-vue-next'
 import { getInitials, formatFecha } from '@/utils/format'
 
 const emit = defineEmits<{
@@ -46,8 +47,8 @@ const { pacientesFiltrados } = storeToRefs(pacienteStore)
         <tr
           v-for="paciente in pacientesFiltrados"
           :key="paciente.id"
+          class="hover:bg-neutral-50 cursor-pointer transition-colors duration-150 group"
           @click="emit('viewHistory', paciente.id)"
-          class="hover:bg-neutral-50 cursor-pointer transition-colors duration-150"
         >
           <td class="px-6 py-4">
             <div class="flex items-center gap-3">
@@ -66,15 +67,15 @@ const { pacientesFiltrados } = storeToRefs(pacienteStore)
           <td class="px-6 py-4">
             <span class="text-neutral-900">{{ paciente.edad }} años</span>
             <span class="text-neutral-400 mx-1">/</span>
-            <span class="text-neutral-600">{{ paciente.sexo === 'M' ? 'Masculino' : 'Femenino' }}</span>
+            <span class="text-neutral-600 text-sm">{{ paciente.sexo === 'M' ? 'Masc.' : 'Fem.' }}</span>
           </td>
           <td class="px-6 py-4 hidden md:table-cell">
-            <div class="flex items-center gap-2 text-neutral-600">
-              <Phone class="w-4 h-4 text-neutral-400" />
+            <div class="flex items-center gap-2 text-neutral-600 text-sm">
+              <Phone class="w-3.5 h-3.5 text-neutral-400" />
               {{ paciente.telefono }}
             </div>
           </td>
-          <td class="px-6 py-4 hidden lg:table-cell text-neutral-600">
+          <td class="px-6 py-4 hidden lg:table-cell text-neutral-600 text-sm">
             {{ formatFecha(paciente.ultimaVisita) }}
           </td>
           <td class="px-6 py-4">
@@ -84,10 +85,12 @@ const { pacientesFiltrados } = storeToRefs(pacienteStore)
           </td>
           <td class="px-6 py-4 text-right">
             <button
-              class="p-2 rounded-lg text-neutral-400 hover:text-primary-500 hover:bg-primary-50 transition-colors"
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 transition-all border border-primary-100"
               @click.stop="emit('viewHistory', paciente.id)"
             >
-              <ChevronRight class="w-5 h-5" />
+              <FileText class="w-4 h-4" />
+              <span class="hidden sm:inline">Ver Historia</span>
+              <ChevronRight class="w-4 h-4" />
             </button>
           </td>
         </tr>
