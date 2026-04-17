@@ -1,18 +1,21 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
+import { usePacienteStore } from "@/stores/pacienteStore";
 
 export interface ConsultaData {
+  // Identificación
   nombre: string;
   edad: string;
+  sexo: string; // Nuevo
   escolaridad: string;
   ocupacionAnterior: string;
   fuente: string;
   fechaEvaluacion: string;
   telefonoCuidadora: string;
-
+  // Motivo e Historia
   motivoConsulta: string;
   historiaEnfermedadActual: string;
-
+  // Antecedentes
   antPatologicos: string;
   antQuirurgicos: string;
   antTraumaticos: string;
@@ -20,7 +23,7 @@ export interface ConsultaData {
   antHospitalarios: string;
   antInmunologicos: string;
   antToxicos: string;
-
+  // Revisión
   revNutricional: string;
   revDisfagia: string;
   revVision: string;
@@ -32,20 +35,19 @@ export interface ConsultaData {
   revSintomasDepresivos: string;
   revSueno: string;
   revPatronEvacuatorio: string;
-
+  // Examen Físico
   tratamientoActual: string;
   taDerecha: string;
   taIzquierda: string;
   fc: string;
   fr: string;
   spo2: string;
-
   peso: string;
   glicemiaCapilar: string;
   fuerzaPrensionIzquierda: string;
   fuerzaPrensionDerecha: string;
   descripcionExamenFisico: string;
-
+  // VGI Escalas
   scoreQSM: string;
   scoreGDS: string;
   scoreBarthel: string;
@@ -53,13 +55,13 @@ export interface ConsultaData {
   scoreSARCF: string;
   scoreFRAIL: string;
   scoreMNA: string;
-
+  // Diagnósticos
   diagClinicos: string;
   diagFuncionales: string;
   diagMentales: string;
   diagSociales: string;
   analisisClinicoIntegral: string;
-
+  // Plan
   recomFarmacologicas: string;
   recomNoFarmacologicas: string;
   estudiosComplementarios: string;
@@ -69,15 +71,14 @@ export interface ConsultaData {
 const initialState: ConsultaData = {
   nombre: "",
   edad: "",
+  sexo: "",
   escolaridad: "",
   ocupacionAnterior: "",
   fuente: "",
   fechaEvaluacion: "",
   telefonoCuidadora: "",
-
   motivoConsulta: "",
   historiaEnfermedadActual: "",
-
   antPatologicos: "",
   antQuirurgicos: "",
   antTraumaticos: "",
@@ -85,7 +86,6 @@ const initialState: ConsultaData = {
   antHospitalarios: "",
   antInmunologicos: "",
   antToxicos: "",
-
   revNutricional: "",
   revDisfagia: "",
   revVision: "",
@@ -97,20 +97,17 @@ const initialState: ConsultaData = {
   revSintomasDepresivos: "",
   revSueno: "",
   revPatronEvacuatorio: "",
-
   tratamientoActual: "",
   taDerecha: "",
   taIzquierda: "",
   fc: "",
   fr: "",
   spo2: "",
-
   peso: "",
   glicemiaCapilar: "",
   fuerzaPrensionIzquierda: "",
   fuerzaPrensionDerecha: "",
   descripcionExamenFisico: "",
-
   scoreQSM: "",
   scoreGDS: "",
   scoreBarthel: "",
@@ -118,13 +115,11 @@ const initialState: ConsultaData = {
   scoreSARCF: "",
   scoreFRAIL: "",
   scoreMNA: "",
-
   diagClinicos: "",
   diagFuncionales: "",
   diagMentales: "",
   diagSociales: "",
   analisisClinicoIntegral: "",
-
   recomFarmacologicas: "",
   recomNoFarmacologicas: "",
   estudiosComplementarios: "",
@@ -158,17 +153,24 @@ export const useConsultaStore = defineStore("consulta", () => {
   async function guardarRegistro() {
     if (!isFormValid.value) return false;
     isLoading.value = true;
-
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.log(
-        "Historia Clínica Geriátrica Guardada:",
-        JSON.parse(JSON.stringify(formData.value)),
-      );
+
+      // SINCRONIZAR CON DIRECTORIO
+      const pacienteStore = usePacienteStore();
+      pacienteStore.agregarPaciente({
+        nombre: formData.value.nombre,
+        cedula: "---",
+        edad: parseInt(formData.value.edad) || 0,
+        sexo: formData.value.sexo === "femenino" ? "F" : "M",
+        telefono: formData.value.telefonoCuidadora || "",
+        estado: "en_tratamiento",
+        ultimaVisita: new Date(),
+      });
+
       isSaved.value = true;
       return true;
     } catch (error) {
-      console.error("Error al guardar:", error);
       return false;
     } finally {
       isLoading.value = false;

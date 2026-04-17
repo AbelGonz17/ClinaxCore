@@ -18,6 +18,10 @@ import { type ConsultaData } from "@/stores/consultaStore";
 
 const store = useConsultaStore();
 
+const emit = defineEmits<{
+  navigate: [view: string];
+}>();
+
 const escalasGeriatricas = [
   { label: "QSM (Memoria)", key: "scoreQSM" },
   { label: "GDS (Depresión)", key: "scoreGDS" },
@@ -85,29 +89,32 @@ const signosVitalesMap: Record<string, keyof ConsultaData> = {
 };
 
 const handleSubmit = async () => {
+  console.log("Iniciando guardado integral...");
   const ok = await store.guardarRegistro();
   if (ok) {
-    alert("Historia Clínica almacenada correctamente en el sistema.");
+    alert("Historia Clínica guardada. Paciente sincronizado en el directorio.");
+    emit("navigate", "pacientes");
   }
 };
 
 const handleReset = () => {
-  if (
-    confirm("¿Estás seguro de que deseas borrar toda la información actual?")
-  ) {
+  if (confirm("¿Deseas limpiar el formulario actual?"))
     store.limpiarFormulario();
-  }
 };
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50/50 py-12 px-4">
+  <div class="min-h-screen bg-slate-50/50 py-12 px-4 font-['Inter']">
     <div class="max-w-5xl mx-auto">
       <div class="mb-10 text-center">
-        <div class="inline-block p-3 rounded-2xl bg-white shadow-sm mb-4">
+        <div
+          class="inline-block p-3 rounded-2xl bg-white shadow-sm mb-4 border border-slate-100"
+        >
           <Stethoscope class="w-8 h-8 text-blue-600" />
         </div>
-        <h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">
+        <h1
+          class="text-4xl font-extrabold text-slate-800 tracking-tight text-balance"
+        >
           Historia Clínica Geriátrica
         </h1>
         <p class="text-slate-500 mt-2 font-medium text-lg italic">
@@ -117,19 +124,17 @@ const handleReset = () => {
 
       <form @submit.prevent="handleSubmit" class="space-y-8">
         <section
-          class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8 transition-all hover:shadow-2xl hover:shadow-blue-900/10"
+          class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8 transition-all hover:shadow-2xl"
         >
-          <div
-            class="flex items-center gap-3 mb-8 pb-4 border-b border-slate-50"
+          <h2
+            class="text-xl font-bold text-slate-700 mb-8 flex items-center gap-3 border-b border-slate-50 pb-4"
           >
-            <User class="w-5 h-5 text-blue-500" />
-            <h2 class="text-xl font-bold text-slate-700">Identificación</h2>
-          </div>
-
+            <User class="w-5 h-5 text-blue-500" /> Identificación
+          </h2>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 group">
               <label
-                class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1"
+                class="text-xs font-bold uppercase text-slate-400 mb-2 block ml-1"
                 >Nombre Completo</label
               >
               <input
@@ -141,12 +146,32 @@ const handleReset = () => {
                     ($event.target as HTMLInputElement).value,
                   )
                 "
-                class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none text-slate-700 font-medium"
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all font-medium text-slate-700"
               />
             </div>
-            <div class="group">
+            <div>
               <label
-                class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1"
+                class="text-xs font-bold uppercase text-slate-400 mb-2 block ml-1"
+                >Sexo</label
+              >
+              <select
+                :value="store.formData.sexo"
+                @change="
+                  store.updateField(
+                    'sexo',
+                    ($event.target as HTMLSelectElement).value,
+                  )
+                "
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all font-medium text-slate-700 appearance-none"
+              >
+                <option value="">Seleccionar...</option>
+                <option value="femenino">Femenino</option>
+                <option value="masculino">Masculino</option>
+              </select>
+            </div>
+            <div>
+              <label
+                class="text-xs font-bold uppercase text-slate-400 mb-2 block ml-1"
                 >Edad / Nacimiento</label
               >
               <input
@@ -158,15 +183,14 @@ const handleReset = () => {
                     ($event.target as HTMLInputElement).value,
                   )
                 "
-                class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none"
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 outline-none"
               />
             </div>
-            <div class="group">
+            <div>
               <label
-                class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1 flex items-center gap-1"
+                class="text-xs font-bold uppercase text-slate-400 mb-2 block ml-1 flex items-center gap-1"
+                ><Phone class="w-3 h-3" /> Teléfono Cuidador</label
               >
-                <Phone class="w-3 h-3" /> Teléfono Cuidador(a)
-              </label>
               <input
                 type="text"
                 :value="store.formData.telefonoCuidadora"
@@ -176,12 +200,12 @@ const handleReset = () => {
                     ($event.target as HTMLInputElement).value,
                   )
                 "
-                class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none"
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 outline-none"
               />
             </div>
-            <div class="group">
+            <div>
               <label
-                class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1"
+                class="text-xs font-bold uppercase text-slate-400 mb-2 block ml-1"
                 >Escolaridad</label
               >
               <input
@@ -193,24 +217,7 @@ const handleReset = () => {
                     ($event.target as HTMLInputElement).value,
                   )
                 "
-                class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none"
-              />
-            </div>
-            <div class="group">
-              <label
-                class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1"
-                >Ocupación Anterior</label
-              >
-              <input
-                type="text"
-                :value="store.formData.ocupacionAnterior"
-                @input="
-                  store.updateField(
-                    'ocupacionAnterior',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
-                class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none"
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 outline-none"
               />
             </div>
           </div>
@@ -218,17 +225,16 @@ const handleReset = () => {
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <section
-            class="bg-slate-800 rounded-[2rem] p-8 text-white shadow-2xl shadow-slate-900/20"
+            class="bg-slate-800 rounded-[2rem] p-8 text-white shadow-2xl"
           >
-            <div class="flex items-center gap-3 mb-8">
-              <History class="w-5 h-5 text-blue-400" />
-              <h2 class="text-xl font-bold">Antecedentes</h2>
-            </div>
-            <div class="grid grid-cols-1 gap-y-4">
+            <h2 class="text-xl font-bold mb-8 flex items-center gap-3">
+              <History class="w-5 h-5 text-blue-400" /> Antecedentes
+            </h2>
+            <div class="grid gap-y-4">
               <div
                 v-for="(label, key) in antecedentesMap"
                 :key="key"
-                class="flex flex-col group"
+                class="flex flex-col"
               >
                 <span
                   class="text-[10px] font-bold text-slate-500 uppercase ml-1"
@@ -243,25 +249,24 @@ const handleReset = () => {
                       ($event.target as HTMLInputElement).value,
                     )
                   "
-                  class="bg-transparent border-b border-slate-700 focus:border-blue-400 outline-none py-1 text-slate-200 transition-all"
+                  class="bg-transparent border-b border-slate-700 focus:border-blue-400 outline-none py-1 text-slate-200"
                 />
               </div>
             </div>
           </section>
 
           <section
-            class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8"
+            class="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-8"
           >
-            <div class="flex items-center gap-3 mb-8">
-              <Activity class="w-5 h-5 text-emerald-500" />
-              <h2 class="text-xl font-bold text-slate-700">
-                Revisión Geriátrica
-              </h2>
-            </div>
-            <div
-              class="grid grid-cols-1 gap-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"
+            <h2
+              class="text-xl font-bold text-slate-700 mb-8 flex items-center gap-3"
             >
-              <div v-for="(label, key) in revisionMap" :key="key" class="group">
+              <Activity class="w-5 h-5 text-emerald-500" /> Revisión Geriátrica
+            </h2>
+            <div
+              class="grid gap-y-4 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar"
+            >
+              <div v-for="(label, key) in revisionMap" :key="key">
                 <span
                   class="text-[10px] font-black uppercase text-slate-400 tracking-wider"
                   >{{ label }}</span
@@ -275,7 +280,7 @@ const handleReset = () => {
                       ($event.target as HTMLInputElement).value,
                     )
                   "
-                  class="w-full bg-transparent border-b border-slate-100 focus:border-emerald-400 outline-none py-1 text-sm text-slate-600 font-medium transition-all"
+                  class="w-full bg-transparent border-b border-slate-100 focus:border-emerald-400 outline-none py-1 text-sm text-slate-600 font-medium"
                 />
               </div>
             </div>
@@ -283,14 +288,14 @@ const handleReset = () => {
         </div>
 
         <section
-          class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8"
+          class="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-8"
         >
-          <div class="flex items-center gap-3 mb-8">
-            <ClipboardList class="w-5 h-5 text-purple-500" />
-            <h2 class="text-xl font-bold text-slate-700">
-              Valoración Geriátrica Integral (Escalas)
-            </h2>
-          </div>
+          <h2
+            class="text-xl font-bold text-slate-700 mb-8 flex items-center gap-3"
+          >
+            <ClipboardList class="w-5 h-5 text-purple-500" /> Escalas de
+            Valoración (Scores)
+          </h2>
           <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             <div
               v-for="escala in escalasGeriatricas"
@@ -318,14 +323,14 @@ const handleReset = () => {
         </section>
 
         <section
-          class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8"
+          class="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-8"
         >
-          <div class="flex items-center gap-3 mb-8">
-            <Activity class="w-5 h-5 text-red-500" />
-            <h2 class="text-xl font-bold text-slate-700">
-              Diagnósticos Multidimensionales
-            </h2>
-          </div>
+          <h2
+            class="text-xl font-bold text-slate-700 mb-8 flex items-center gap-3"
+          >
+            <Activity class="w-5 h-5 text-red-500" /> Diagnósticos
+            Multidimensionales
+          </h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div
               v-for="diag in diagnosticosEsferas"
@@ -345,7 +350,7 @@ const handleReset = () => {
                   )
                 "
                 rows="3"
-                class="w-full p-4 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-100 outline-none transition-all text-sm text-slate-600"
+                class="w-full p-4 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-red-50 outline-none transition-all text-sm text-slate-600"
               ></textarea>
             </div>
           </div>
@@ -354,10 +359,9 @@ const handleReset = () => {
         <section
           class="bg-blue-900 rounded-[2rem] p-8 text-white shadow-2xl shadow-blue-900/20"
         >
-          <div class="flex items-center gap-3 mb-6">
-            <FileText class="w-5 h-5 text-blue-300" />
-            <h2 class="text-xl font-bold">Análisis Clínico Integral</h2>
-          </div>
+          <h2 class="text-xl font-bold mb-6 flex items-center gap-3">
+            <FileText class="w-5 h-5 text-blue-300" /> Análisis Clínico Integral
+          </h2>
           <textarea
             :value="store.formData.analisisClinicoIntegral"
             @input="
@@ -376,46 +380,31 @@ const handleReset = () => {
           class="bg-blue-600 rounded-[2rem] p-1 shadow-xl shadow-blue-600/30"
         >
           <div class="bg-white rounded-[1.8rem] p-8 space-y-8">
-            <div
-              class="flex flex-col lg:flex-row lg:items-center justify-between gap-8"
-            >
+            <div class="flex flex-col lg:flex-row justify-between gap-8">
               <div class="space-y-6 flex-1">
                 <h3
                   class="text-lg font-bold text-slate-800 underline underline-offset-8 decoration-blue-200"
                 >
-                  Examen Físico y TA
+                  Signos Vitales y TA
                 </h3>
-                <div class="flex flex-wrap gap-6">
+                <div class="flex flex-wrap gap-4">
                   <div
-                    class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-4"
+                    v-for="pos in ['taDerecha', 'taIzquierda']"
+                    :key="pos"
+                    class="bg-slate-50 p-4 rounded-2xl flex items-center gap-4 border border-slate-100"
                   >
-                    <span class="text-xs font-bold text-slate-500 uppercase"
-                      >TA Derecha</span
+                    <span
+                      class="text-[10px] font-bold text-slate-500 uppercase"
+                      >{{ pos === "taDerecha" ? "TA Der" : "TA Izq" }}</span
                     >
                     <input
                       type="text"
-                      :value="store.formData.taDerecha"
-                      @input="
-                        store.updateField(
-                          'taDerecha',
-                          ($event.target as HTMLInputElement).value,
-                        )
+                      :value="
+                        store.formData[pos as 'taDerecha' | 'taIzquierda']
                       "
-                      class="w-16 bg-white border border-slate-200 rounded-lg py-1 text-center font-bold text-blue-600 outline-none"
-                    />
-                  </div>
-                  <div
-                    class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-4"
-                  >
-                    <span class="text-xs font-bold text-slate-500 uppercase"
-                      >TA Izquierda</span
-                    >
-                    <input
-                      type="text"
-                      :value="store.formData.taIzquierda"
                       @input="
                         store.updateField(
-                          'taIzquierda',
+                          pos as any,
                           ($event.target as HTMLInputElement).value,
                         )
                       "
@@ -424,17 +413,15 @@ const handleReset = () => {
                   </div>
                 </div>
               </div>
-
-              <div class="flex flex-wrap gap-3 lg:justify-end">
+              <div class="flex flex-wrap gap-3">
                 <div
                   v-for="(field, label) in signosVitalesMap"
                   :key="label"
                   class="px-6 py-4 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100 flex flex-col items-center"
                 >
-                  <span
-                    class="text-[10px] font-black uppercase opacity-60 tracking-tighter"
-                    >{{ label }}</span
-                  >
+                  <span class="text-[10px] font-black uppercase opacity-60">{{
+                    label
+                  }}</span>
                   <input
                     type="text"
                     :value="store.formData[field]"
@@ -450,12 +437,11 @@ const handleReset = () => {
                 </div>
               </div>
             </div>
-
             <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
               <p
-                class="text-[11px] font-bold text-slate-400 uppercase mb-3 tracking-widest"
+                class="text-[10px] font-black text-slate-400 uppercase mb-3 ml-1"
               >
-                Descripción Hallazgos Físicos (Ojos, MMII, Sensorio)
+                Hallazgos del Examen Físico (Ojos, MMII, Sensorio)
               </p>
               <textarea
                 :value="store.formData.descripcionExamenFisico"
@@ -466,14 +452,14 @@ const handleReset = () => {
                   )
                 "
                 rows="4"
-                class="w-full bg-transparent border-none focus:ring-0 text-slate-600 leading-relaxed text-sm"
+                class="w-full bg-transparent border-none focus:ring-0 text-slate-600 text-sm leading-relaxed"
               ></textarea>
             </div>
           </div>
         </section>
 
         <section
-          class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8"
+          class="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-8"
         >
           <h2
             class="text-xl font-bold text-slate-700 mb-8 underline decoration-blue-500 underline-offset-8"
@@ -500,35 +486,31 @@ const handleReset = () => {
                   )
                 "
                 rows="3"
-                class="w-full p-4 rounded-2xl bg-slate-50 border-transparent group-focus-within:bg-white group-focus-within:border-blue-100 focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm text-slate-600"
+                class="w-full p-4 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all text-sm text-slate-600"
               ></textarea>
             </div>
           </div>
         </section>
 
-        <div
-          class="flex flex-col sm:flex-row justify-end items-center gap-4 pt-6"
-        >
+        <div class="flex justify-end items-center gap-4 pt-6 pb-12">
           <button
             type="button"
             @click="handleReset"
-            class="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+            class="px-8 py-4 rounded-2xl font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
           >
-            Descartar Cambios
+            Descartar
           </button>
           <button
             type="submit"
             :disabled="store.isLoading"
-            class="w-full sm:w-auto px-12 py-4 rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-xl shadow-blue-600/30 hover:bg-blue-700 hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3"
+            class="px-12 py-4 rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-xl shadow-blue-600/30 hover:bg-blue-700 transition-all flex items-center justify-center gap-3"
           >
             <Save v-if="!store.isLoading" class="w-5 h-5" />
             <div
               v-else
               class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
             ></div>
-            {{
-              store.isLoading ? "Procesando..." : "Finalizar Registro Integral"
-            }}
+            {{ store.isLoading ? "Procesando..." : "Finalizar VGI" }}
           </button>
         </div>
       </form>
@@ -537,14 +519,6 @@ const handleReset = () => {
 </template>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
-div {
-  font-family: "Inter", sans-serif;
-}
-input,
-textarea {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -554,5 +528,9 @@ textarea {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 10px;
+}
+input,
+textarea {
+  transition: all 0.2s ease;
 }
 </style>

@@ -114,14 +114,29 @@ export const usePacienteStore = defineStore('paciente', () => {
     filtros.value.ultimaVisita = valor
   }
 
-  function agregarPaciente(paciente: Omit<Paciente, 'id' | 'fechaRegistro'>) {
+function agregarPaciente(datosPaciente: Omit<Paciente, 'id' | 'fechaRegistro'> & { id?: string }) {
+  const index = pacientes.value.findIndex(p => 
+    p.nombre === datosPaciente.nombre || 
+    (datosPaciente.cedula !== '---' && p.cedula === datosPaciente.cedula)
+  );
+
+  if (index !== -1) {
+    pacientes.value[index] = {
+      ...pacientes.value[index],
+      ...datosPaciente,
+      ultimaVisita: new Date() 
+    } as Paciente;
+  } else {
     const nuevoPaciente: Paciente = {
-      ...paciente,
-      id: Date.now().toString(),
-      fechaRegistro: new Date()
-    }
-    pacientes.value.unshift(nuevoPaciente)
+      ...datosPaciente,
+      id: datosPaciente.id || crypto.randomUUID(), 
+      fechaRegistro: new Date(),
+      ultimaVisita: new Date()
+    } as Paciente;
+    
+    pacientes.value.unshift(nuevoPaciente);
   }
+}
 
   return {
     pacientes,
