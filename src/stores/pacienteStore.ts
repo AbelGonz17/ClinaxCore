@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Paciente, FiltrosPaciente } from '@/Types'
 
 // Mock data
@@ -62,17 +62,41 @@ const mockPacientes: Paciente[] = [
 ]
 
 export const usePacienteStore = defineStore('paciente', () => {
-  const pacientes = ref<Paciente[]>(mockPacientes)
+  // Inicializar desde LocalStorage o usar Mocks
+  const inicializarPacientes = () => {
+    const guardados = localStorage.getItem('directorio_pacientes')
+    if (guardados) {
+      try {
+        const parseados = JSON.parse(guardados)
+        // Convertir strings de fecha a objetos Date para que el store funcione igual
+        return parseados.map((p: any) => ({
+          ...p,
+          ultimaVisita: new Date(p.ultimaVisita),
+          fechaRegistro: new Date(p.fechaRegistro)
+        }))
+      } catch (e) {
+        console.error("Error parseando localStorage", e)
+      }
+    }
+    return mockPacientes
+  }
+
+  const pacientes = ref<any[]>(inicializarPacientes())
+  
   const filtros = ref<FiltrosPaciente>({
     busqueda: '',
     ultimaVisita: 'todos'
   })
   const isLoading = ref(false)
 
+  // Vigilar cambios y guardar en LocalStorage automáticamente
+  watch(pacientes, (nuevosPacientes) => {
+    localStorage.setItem('directorio_pacientes', JSON.stringify(nuevosPacientes))
+  }, { deep: true })
+
   const pacientesFiltrados = computed(() => {
     let resultado = [...pacientes.value]
 
-    // Filter by search (name or ID)
     if (filtros.value.busqueda.trim()) {
       const busqueda = filtros.value.busqueda.toLowerCase()
       resultado = resultado.filter(
@@ -82,7 +106,6 @@ export const usePacienteStore = defineStore('paciente', () => {
       )
     }
 
-    // Filter by last visit
     const ahora = new Date()
     const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate())
     
@@ -114,29 +137,27 @@ export const usePacienteStore = defineStore('paciente', () => {
     filtros.value.ultimaVisita = valor
   }
 
-function agregarPaciente(datosPaciente: Omit<Paciente, 'id' | 'fechaRegistro'> & { id?: string }) {
-  const index = pacientes.value.findIndex(p => 
-    p.nombre === datosPaciente.nombre || 
-    (datosPaciente.cedula !== '---' && p.cedula === datosPaciente.cedula)
-  );
+  function agregarPaciente(datosPaciente: any) {
+    const index = pacientes.value.findIndex(p => 
+      p.cedula !== '---' && p.cedula !== 'Sin registro' && p.cedula === datosPaciente.cedula
+    );
 
-  if (index !== -1) {
-    pacientes.value[index] = {
-      ...pacientes.value[index],
-      ...datosPaciente,
-      ultimaVisita: new Date() 
-    } as Paciente;
-  } else {
-    const nuevoPaciente: Paciente = {
-      ...datosPaciente,
-      id: datosPaciente.id || crypto.randomUUID(), 
-      fechaRegistro: new Date(),
-      ultimaVisita: new Date()
-    } as Paciente;
-    
-    pacientes.value.unshift(nuevoPaciente);
+    if (index !== -1) {
+      pacientes.value[index] = {
+        ...pacientes.value[index],
+        ...datosPaciente,
+        ultimaVisita: new Date()
+      };
+    } else {
+      const nuevoPaciente = {
+        ...datosPaciente,
+        id: datosPaciente.id || crypto.randomUUID(), 
+        fechaRegistro: new Date(),
+        ultimaVisita: new Date()
+      };
+      pacientes.value.unshift(nuevoPaciente);
+    }
   }
-}
 
   return {
     pacientes,

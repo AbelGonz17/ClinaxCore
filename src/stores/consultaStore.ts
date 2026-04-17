@@ -3,19 +3,17 @@ import { ref, computed } from "vue";
 import { usePacienteStore } from "@/stores/pacienteStore";
 
 export interface ConsultaData {
-  // Identificación
   nombre: string;
+  cedula: string;
   edad: string;
-  sexo: string; // Nuevo
+  sexo: string;
   escolaridad: string;
   ocupacionAnterior: string;
   fuente: string;
   fechaEvaluacion: string;
   telefonoCuidadora: string;
-  // Motivo e Historia
   motivoConsulta: string;
   historiaEnfermedadActual: string;
-  // Antecedentes
   antPatologicos: string;
   antQuirurgicos: string;
   antTraumaticos: string;
@@ -23,7 +21,6 @@ export interface ConsultaData {
   antHospitalarios: string;
   antInmunologicos: string;
   antToxicos: string;
-  // Revisión
   revNutricional: string;
   revDisfagia: string;
   revVision: string;
@@ -35,7 +32,6 @@ export interface ConsultaData {
   revSintomasDepresivos: string;
   revSueno: string;
   revPatronEvacuatorio: string;
-  // Examen Físico
   tratamientoActual: string;
   taDerecha: string;
   taIzquierda: string;
@@ -47,7 +43,6 @@ export interface ConsultaData {
   fuerzaPrensionIzquierda: string;
   fuerzaPrensionDerecha: string;
   descripcionExamenFisico: string;
-  // VGI Escalas
   scoreQSM: string;
   scoreGDS: string;
   scoreBarthel: string;
@@ -55,13 +50,11 @@ export interface ConsultaData {
   scoreSARCF: string;
   scoreFRAIL: string;
   scoreMNA: string;
-  // Diagnósticos
   diagClinicos: string;
   diagFuncionales: string;
   diagMentales: string;
   diagSociales: string;
   analisisClinicoIntegral: string;
-  // Plan
   recomFarmacologicas: string;
   recomNoFarmacologicas: string;
   estudiosComplementarios: string;
@@ -70,6 +63,7 @@ export interface ConsultaData {
 
 const initialState: ConsultaData = {
   nombre: "",
+  cedula: "",
   edad: "",
   sexo: "",
   escolaridad: "",
@@ -134,7 +128,8 @@ export const useConsultaStore = defineStore("consulta", () => {
   const validationErrors = computed(() => {
     const errors: Partial<Record<keyof ConsultaData, boolean>> = {};
     if (!formData.value.nombre.trim()) errors.nombre = true;
-    if (!formData.value.motivoConsulta.trim()) errors.motivoConsulta = true;
+    if (!formData.value.cedula.trim()) errors.cedula = true;
+    if (!formData.value.sexo) errors.sexo = true;
     return errors;
   });
 
@@ -154,18 +149,20 @@ export const useConsultaStore = defineStore("consulta", () => {
     if (!isFormValid.value) return false;
     isLoading.value = true;
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // SINCRONIZAR CON DIRECTORIO
       const pacienteStore = usePacienteStore();
+
       pacienteStore.agregarPaciente({
         nombre: formData.value.nombre,
-        cedula: "---",
+        cedula: formData.value.cedula || "Sin registro",
         edad: parseInt(formData.value.edad) || 0,
         sexo: formData.value.sexo === "femenino" ? "F" : "M",
         telefono: formData.value.telefonoCuidadora || "",
         estado: "en_tratamiento",
         ultimaVisita: new Date(),
+        // GUARDAMOS LA HISTORIA CLÍNICA COMPLETA AQUÍ
+        historiaClinica: { ...formData.value },
       });
 
       isSaved.value = true;
@@ -182,6 +179,30 @@ export const useConsultaStore = defineStore("consulta", () => {
     isSaved.value = false;
   }
 
+  // NUEVA FUNCIÓN: Extrae la data del paciente y la coloca en el formulario
+  function cargarPaciente(pacienteId: string) {
+    const pacienteStore = usePacienteStore();
+    const paciente = pacienteStore.pacientes.find((p) => p.id === pacienteId);
+
+    if (paciente) {
+      if (paciente.historiaClinica) {
+        // Carga la data completa si ya existía
+        formData.value = { ...paciente.historiaClinica };
+      } else {
+        // Carga los datos básicos de la tabla si es primera vez abriendo su historia
+        limpiarFormulario();
+        formData.value.nombre = paciente.nombre;
+        formData.value.cedula =
+          paciente.cedula !== "---" && paciente.cedula !== "Sin registro"
+            ? paciente.cedula
+            : "";
+        formData.value.edad = paciente.edad ? paciente.edad.toString() : "";
+        formData.value.sexo = paciente.sexo === "F" ? "femenino" : "masculino";
+        formData.value.telefonoCuidadora = paciente.telefono || "";
+      }
+    }
+  }
+
   return {
     formData,
     isLoading,
@@ -191,5 +212,6 @@ export const useConsultaStore = defineStore("consulta", () => {
     updateField,
     guardarRegistro,
     limpiarFormulario,
+    cargarPaciente,
   };
 });

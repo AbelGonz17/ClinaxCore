@@ -149,6 +149,26 @@ const handleReset = () => {
                 class="w-full px-5 py-3 rounded-2xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all font-medium text-slate-700"
               />
             </div>
+
+            <div>
+              <label
+                class="text-xs font-bold uppercase text-slate-400 mb-2 block ml-1"
+                >Cédula</label
+              >
+              <input
+                type="text"
+                :value="store.formData.cedula"
+                @input="
+                  store.updateField(
+                    'cedula',
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+                placeholder="000-0000000-0"
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all font-medium text-slate-700"
+              />
+            </div>
+
             <div>
               <label
                 class="text-xs font-bold uppercase text-slate-400 mb-2 block ml-1"
@@ -169,6 +189,7 @@ const handleReset = () => {
                 <option value="masculino">Masculino</option>
               </select>
             </div>
+
             <div>
               <label
                 class="text-xs font-bold uppercase text-slate-400 mb-2 block ml-1"
@@ -186,11 +207,13 @@ const handleReset = () => {
                 class="w-full px-5 py-3 rounded-2xl bg-slate-50 outline-none"
               />
             </div>
+
             <div>
               <label
                 class="text-xs font-bold uppercase text-slate-400 mb-2 block ml-1 flex items-center gap-1"
-                ><Phone class="w-3 h-3" /> Teléfono Cuidador</label
               >
+                <Phone class="w-3 h-3" /> Teléfono Cuidador
+              </label>
               <input
                 type="text"
                 :value="store.formData.telefonoCuidadora"
@@ -203,6 +226,7 @@ const handleReset = () => {
                 class="w-full px-5 py-3 rounded-2xl bg-slate-50 outline-none"
               />
             </div>
+
             <div>
               <label
                 class="text-xs font-bold uppercase text-slate-400 mb-2 block ml-1"
