@@ -1,396 +1,558 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useConsultaStore } from '@/stores/consultaStore'
-import { 
-  User, 
-  Activity, 
-  ClipboardList, 
-  FileText, 
-  Save, 
-  RotateCcw,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-vue-next'
+import { useConsultaStore } from "@/stores/consultaStore";
+import {
+  Stethoscope,
+  User,
+  History,
+  Activity,
+  Save,
+  Phone,
+  ClipboardList,
+  FileText,
+  Pill,
+  HeartPulse,
+  Microscope,
+  Accessibility,
+} from "lucide-vue-next";
+import { type ConsultaData } from "@/stores/consultaStore";
 
-const store = useConsultaStore()
+const store = useConsultaStore();
 
-const touched = ref<Record<string, boolean>>({})
+const escalasGeriatricas = [
+  { label: "QSM (Memoria)", key: "scoreQSM" },
+  { label: "GDS (Depresión)", key: "scoreGDS" },
+  { label: "Barthel (ABVD)", key: "scoreBarthel" },
+  { label: "Lawton (AIVD)", key: "scoreLawton" },
+  { label: "SARC-F (Sarcopenia)", key: "scoreSARCF" },
+  { label: "FRAIL (Fragilidad)", key: "scoreFRAIL" },
+  { label: "MNA (Nutrición)", key: "scoreMNA" },
+] as const;
 
-function markTouched(field: string) {
-  touched.value[field] = true
-}
+const diagnosticosEsferas = [
+  { label: "Clínicos", key: "diagClinicos" },
+  { label: "Funcionales", key: "diagFuncionales" },
+  { label: "Mentales", key: "diagMentales" },
+  { label: "Sociales", key: "diagSociales" },
+] as const;
 
-function hasError(field: string) {
-  return touched.value[field] && store.validationErrors[field as keyof typeof store.validationErrors]
-}
+const recomendacionesCampos = [
+  { label: "Farmacológicas", key: "recomFarmacologicas", icon: Pill },
+  {
+    label: "No Farmacológicas",
+    key: "recomNoFarmacologicas",
+    icon: HeartPulse,
+  },
+  {
+    label: "Estudios Complementarios",
+    key: "estudiosComplementarios",
+    icon: Microscope,
+  },
+  {
+    label: "Funcionales y Rehabilitadores",
+    key: "recomFuncionales",
+    icon: Accessibility,
+  },
+] as const;
 
-const sexOptions = [
-  { value: '', label: 'Seleccionar...' },
-  { value: 'masculino', label: 'Masculino' },
-  { value: 'femenino', label: 'Femenino' },
-  { value: 'otro', label: 'Otro' }
-]
+const antecedentesMap = {
+  antPatologicos: "Patológicos",
+  antQuirurgicos: "Quirúrgicos",
+  antTraumaticos: "Traumáticos",
+  antAlergicos: "Alérgicos",
+  antHospitalarios: "Hospitalarios",
+  antInmunologicos: "Inmunológicos",
+  antToxicos: "Tóxicos",
+} as const;
 
-async function handleSubmit() {
-  // Mark all required fields as touched
-  Object.keys(store.validationErrors).forEach(key => {
-    touched.value[key] = true
-  })
-  
-  if (!store.isFormValid) return
-  
-  await store.guardarRegistro()
-}
+const revisionMap = {
+  revNutricional: "Estado Nutricional",
+  revDisfagia: "Presencia de Disfagia",
+  revVision: "Agudeza Visual",
+  revAudicion: "Capacidad Auditiva",
+  revIncontinencias: "Incontinencias",
+  revCaidas: "Caídas Recientes (12m)",
+  revLesionesPiel: "Integridad de la Piel",
+  revDeterioroCognitivo: "Función Cognitiva",
+  revSintomasDepresivos: "Estado de Ánimo",
+  revSueno: "Calidad del Sueño",
+  revPatronEvacuatorio: "Patrón de Eliminación",
+} as const;
 
-function handleReset() {
-  store.limpiarFormulario()
-  touched.value = {}
-}
+const signosVitalesMap: Record<string, keyof ConsultaData> = {
+  FC: "fc",
+  FR: "fr",
+  SpO2: "spo2",
+};
 
-const imcColorClass = computed(() => {
-  const clasificacion = store.imcClasificacion
-  switch (clasificacion) {
-    case 'Bajo peso': return 'text-yellow-600 bg-yellow-50'
-    case 'Normal': return 'text-green-600 bg-green-50'
-    case 'Sobrepeso': return 'text-orange-600 bg-orange-50'
-    case 'Obesidad': return 'text-red-600 bg-red-50'
-    default: return 'text-neutral-600 bg-neutral-50'
+const handleSubmit = async () => {
+  const ok = await store.guardarRegistro();
+  if (ok) {
+    alert("Historia Clínica almacenada correctamente en el sistema.");
   }
-})
+};
+
+const handleReset = () => {
+  if (
+    confirm("¿Estás seguro de que deseas borrar toda la información actual?")
+  ) {
+    store.limpiarFormulario();
+  }
+};
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto">
-    <!-- Page Header -->
-    <div class="mb-6">
-      <h1 class="text-2xl lg:text-3xl font-bold text-neutral-800">Registro de Consulta</h1>
-      <p class="text-neutral-500 mt-1">Complete los datos de la consulta médica</p>
-    </div>
-
-    <!-- Success Message -->
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="transform -translate-y-2 opacity-0"
-      enter-to-class="transform translate-y-0 opacity-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="transform translate-y-0 opacity-100"
-      leave-to-class="transform -translate-y-2 opacity-0"
-    >
-      <div
-        v-if="store.isSaved"
-        class="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3"
-      >
-        <CheckCircle class="w-5 h-5 text-green-600 flex-shrink-0" />
-        <p class="text-green-800 font-medium">Registro guardado exitosamente</p>
+  <div class="min-h-screen bg-slate-50/50 py-12 px-4">
+    <div class="max-w-5xl mx-auto">
+      <div class="mb-10 text-center">
+        <div class="inline-block p-3 rounded-2xl bg-white shadow-sm mb-4">
+          <Stethoscope class="w-8 h-8 text-blue-600" />
+        </div>
+        <h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">
+          Historia Clínica Geriátrica
+        </h1>
+        <p class="text-slate-500 mt-2 font-medium text-lg italic">
+          Valoración Geriátrica Integral (VGI)
+        </p>
       </div>
-    </Transition>
 
-    <!-- Form Card -->
-    <form @submit.prevent="handleSubmit" class="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
-      
-      <!-- Section 1: Patient Information -->
-      <section class="p-6 border-b border-neutral-100">
-        <div class="flex items-center gap-3 mb-5">
-          <div class="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center">
-            <User class="w-5 h-5 text-primary-500" />
-          </div>
-          <h2 class="text-lg font-semibold text-neutral-800">Información del Paciente</h2>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Name -->
-          <div class="lg:col-span-2">
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Nombre completo <span class="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              :value="store.formData.nombre"
-              @input="store.updateField('nombre', ($event.target as HTMLInputElement).value)"
-              @blur="markTouched('nombre')"
-              :class="[
-                'w-full px-4 py-2.5 rounded-xl border transition-all duration-200',
-                hasError('nombre')
-                  ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                  : 'border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400'
-              ]"
-              placeholder="Ingrese el nombre del paciente"
-            />
-            <p v-if="hasError('nombre')" class="mt-1 text-sm text-red-500 flex items-center gap-1">
-              <AlertCircle class="w-3.5 h-3.5" />
-              Campo requerido
-            </p>
+      <form @submit.prevent="handleSubmit" class="space-y-8">
+        <section
+          class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8 transition-all hover:shadow-2xl hover:shadow-blue-900/10"
+        >
+          <div
+            class="flex items-center gap-3 mb-8 pb-4 border-b border-slate-50"
+          >
+            <User class="w-5 h-5 text-blue-500" />
+            <h2 class="text-xl font-bold text-slate-700">Identificación</h2>
           </div>
 
-          <!-- Age -->
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Edad <span class="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              min="0"
-              max="150"
-              :value="store.formData.edad"
-              @input="store.updateField('edad', ($event.target as HTMLInputElement).value)"
-              @blur="markTouched('edad')"
-              :class="[
-                'w-full px-4 py-2.5 rounded-xl border transition-all duration-200',
-                hasError('edad')
-                  ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                  : 'border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400'
-              ]"
-              placeholder="Años"
-            />
-            <p v-if="hasError('edad')" class="mt-1 text-sm text-red-500 flex items-center gap-1">
-              <AlertCircle class="w-3.5 h-3.5" />
-              Campo requerido
-            </p>
-          </div>
-
-          <!-- Sex -->
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Sexo <span class="text-red-500">*</span>
-            </label>
-            <select
-              :value="store.formData.sexo"
-              @change="store.updateField('sexo', ($event.target as HTMLSelectElement).value)"
-              @blur="markTouched('sexo')"
-              :class="[
-                'w-full px-4 py-2.5 rounded-xl border transition-all duration-200 appearance-none bg-white',
-                hasError('sexo')
-                  ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                  : 'border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400'
-              ]"
-            >
-              <option v-for="opt in sexOptions" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-            <p v-if="hasError('sexo')" class="mt-1 text-sm text-red-500 flex items-center gap-1">
-              <AlertCircle class="w-3.5 h-3.5" />
-              Campo requerido
-            </p>
-          </div>
-
-          <!-- Phone -->
-          <div class="lg:col-span-2">
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Teléfono
-            </label>
-            <input
-              type="tel"
-              :value="store.formData.telefono"
-              @input="store.updateField('telefono', ($event.target as HTMLInputElement).value)"
-              class="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400 transition-all duration-200"
-              placeholder="(555) 123-4567"
-            />
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 2: Vital Signs -->
-      <section class="p-6 border-b border-neutral-100 bg-neutral-50/50">
-        <div class="flex items-center gap-3 mb-5">
-          <div class="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center">
-            <Activity class="w-5 h-5 text-primary-500" />
-          </div>
-          <h2 class="text-lg font-semibold text-neutral-800">Signos Vitales</h2>
-        </div>
-
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Blood Pressure -->
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Presión Arterial
-            </label>
-            <input
-              type="text"
-              :value="store.formData.presionArterial"
-              @input="store.updateField('presionArterial', ($event.target as HTMLInputElement).value)"
-              class="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400 transition-all duration-200 bg-white"
-              placeholder="120/80"
-            />
-          </div>
-
-          <!-- Weight -->
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Peso (kg)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              :value="store.formData.peso"
-              @input="store.updateField('peso', ($event.target as HTMLInputElement).value)"
-              class="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400 transition-all duration-200 bg-white"
-              placeholder="70.5"
-            />
-          </div>
-
-          <!-- Height -->
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Talla (cm)
-            </label>
-            <input
-              type="number"
-              min="0"
-              :value="store.formData.talla"
-              @input="store.updateField('talla', ($event.target as HTMLInputElement).value)"
-              class="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400 transition-all duration-200 bg-white"
-              placeholder="170"
-            />
-          </div>
-
-          <!-- BMI (Calculated) -->
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              IMC
-            </label>
-            <div class="relative">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 group">
+              <label
+                class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1"
+                >Nombre Completo</label
+              >
               <input
                 type="text"
-                :value="store.imc ? `${store.imc}` : ''"
-                readonly
-                class="w-full px-4 py-2.5 rounded-xl border border-neutral-200 bg-neutral-100 text-neutral-600 cursor-not-allowed"
-                placeholder="Auto"
+                :value="store.formData.nombre"
+                @input="
+                  store.updateField(
+                    'nombre',
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none text-slate-700 font-medium"
               />
-              <span
-                v-if="store.imcClasificacion"
-                :class="[
-                  'absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-md text-xs font-medium',
-                  imcColorClass
-                ]"
+            </div>
+            <div class="group">
+              <label
+                class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1"
+                >Edad / Nacimiento</label
               >
-                {{ store.imcClasificacion }}
-              </span>
+              <input
+                type="text"
+                :value="store.formData.edad"
+                @input="
+                  store.updateField(
+                    'edad',
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none"
+              />
+            </div>
+            <div class="group">
+              <label
+                class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1 flex items-center gap-1"
+              >
+                <Phone class="w-3 h-3" /> Teléfono Cuidador(a)
+              </label>
+              <input
+                type="text"
+                :value="store.formData.telefonoCuidadora"
+                @input="
+                  store.updateField(
+                    'telefonoCuidadora',
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none"
+              />
+            </div>
+            <div class="group">
+              <label
+                class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1"
+                >Escolaridad</label
+              >
+              <input
+                type="text"
+                :value="store.formData.escolaridad"
+                @input="
+                  store.updateField(
+                    'escolaridad',
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none"
+              />
+            </div>
+            <div class="group">
+              <label
+                class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1"
+                >Ocupación Anterior</label
+              >
+              <input
+                type="text"
+                :value="store.formData.ocupacionAnterior"
+                @input="
+                  store.updateField(
+                    'ocupacionAnterior',
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+                class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none"
+              />
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Section 3: Clinical Evaluation -->
-      <section class="p-6 border-b border-neutral-100">
-        <div class="flex items-center gap-3 mb-5">
-          <div class="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center">
-            <ClipboardList class="w-5 h-5 text-primary-500" />
-          </div>
-          <h2 class="text-lg font-semibold text-neutral-800">Evaluación Clínica</h2>
-        </div>
-
-        <div class="space-y-4">
-          <!-- Consultation Reason -->
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Motivo de Consulta <span class="text-red-500">*</span>
-            </label>
-            <textarea
-              :value="store.formData.motivoConsulta"
-              @input="store.updateField('motivoConsulta', ($event.target as HTMLTextAreaElement).value)"
-              @blur="markTouched('motivoConsulta')"
-              rows="4"
-              :class="[
-                'w-full px-4 py-3 rounded-xl border transition-all duration-200 resize-none',
-                hasError('motivoConsulta')
-                  ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-200 focus:border-red-400'
-                  : 'border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400'
-              ]"
-              placeholder="Describa el motivo principal de la consulta..."
-            ></textarea>
-            <p v-if="hasError('motivoConsulta')" class="mt-1 text-sm text-red-500 flex items-center gap-1">
-              <AlertCircle class="w-3.5 h-3.5" />
-              Campo requerido
-            </p>
-          </div>
-
-          <!-- Medical History -->
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Antecedentes
-            </label>
-            <textarea
-              :value="store.formData.antecedentes"
-              @input="store.updateField('antecedentes', ($event.target as HTMLTextAreaElement).value)"
-              rows="4"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400 transition-all duration-200 resize-none"
-              placeholder="Antecedentes médicos relevantes, alergias, medicamentos actuales..."
-            ></textarea>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 4: Diagnosis and Plan -->
-      <section class="p-6 border-b border-neutral-100 bg-neutral-50/50">
-        <div class="flex items-center gap-3 mb-5">
-          <div class="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center">
-            <FileText class="w-5 h-5 text-primary-500" />
-          </div>
-          <h2 class="text-lg font-semibold text-neutral-800">Diagnóstico y Plan</h2>
-        </div>
-
-        <div class="space-y-4">
-          <!-- Diagnosis CIE-10 -->
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Diagnóstico (CIE-10)
-            </label>
-            <input
-              type="text"
-              :value="store.formData.diagnosticoCie10"
-              @input="store.updateField('diagnosticoCie10', ($event.target as HTMLInputElement).value)"
-              class="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400 transition-all duration-200 bg-white"
-              placeholder="Ej: J06.9 - Infección aguda de vías respiratorias"
-            />
-          </div>
-
-          <!-- Treatment / Prescription -->
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">
-              Tratamiento / Receta
-            </label>
-            <textarea
-              :value="store.formData.tratamiento"
-              @input="store.updateField('tratamiento', ($event.target as HTMLTextAreaElement).value)"
-              rows="5"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-primary-100 focus:border-primary-400 transition-all duration-200 resize-none bg-white"
-              placeholder="Medicamentos, dosis, indicaciones, recomendaciones..."
-            ></textarea>
-          </div>
-        </div>
-      </section>
-
-      <!-- Form Actions -->
-      <div class="p-6 bg-white flex flex-col sm:flex-row gap-3 sm:justify-end">
-        <button
-          type="button"
-          @click="handleReset"
-          class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border border-neutral-300 text-neutral-700 font-medium hover:bg-neutral-100 transition-all duration-200 focus:ring-2 focus:ring-neutral-200"
-        >
-          <RotateCcw class="w-4 h-4" />
-          Limpiar Formulario
-        </button>
-        <button
-          type="submit"
-          :disabled="store.isLoading"
-          class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-primary-500 text-white font-medium hover:bg-primary-600 transition-all duration-200 focus:ring-2 focus:ring-primary-300 disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-primary-500/25"
-        >
-          <svg
-            v-if="store.isLoading"
-            class="animate-spin w-4 h-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <section
+            class="bg-slate-800 rounded-[2rem] p-8 text-white shadow-2xl shadow-slate-900/20"
           >
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <Save v-else class="w-4 h-4" />
-          {{ store.isLoading ? 'Guardando...' : 'Guardar Registro' }}
-        </button>
-      </div>
-    </form>
+            <div class="flex items-center gap-3 mb-8">
+              <History class="w-5 h-5 text-blue-400" />
+              <h2 class="text-xl font-bold">Antecedentes</h2>
+            </div>
+            <div class="grid grid-cols-1 gap-y-4">
+              <div
+                v-for="(label, key) in antecedentesMap"
+                :key="key"
+                class="flex flex-col group"
+              >
+                <span
+                  class="text-[10px] font-bold text-slate-500 uppercase ml-1"
+                  >{{ label }}</span
+                >
+                <input
+                  type="text"
+                  :value="store.formData[key]"
+                  @input="
+                    store.updateField(
+                      key as any,
+                      ($event.target as HTMLInputElement).value,
+                    )
+                  "
+                  class="bg-transparent border-b border-slate-700 focus:border-blue-400 outline-none py-1 text-slate-200 transition-all"
+                />
+              </div>
+            </div>
+          </section>
+
+          <section
+            class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8"
+          >
+            <div class="flex items-center gap-3 mb-8">
+              <Activity class="w-5 h-5 text-emerald-500" />
+              <h2 class="text-xl font-bold text-slate-700">
+                Revisión Geriátrica
+              </h2>
+            </div>
+            <div
+              class="grid grid-cols-1 gap-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"
+            >
+              <div v-for="(label, key) in revisionMap" :key="key" class="group">
+                <span
+                  class="text-[10px] font-black uppercase text-slate-400 tracking-wider"
+                  >{{ label }}</span
+                >
+                <input
+                  type="text"
+                  :value="store.formData[key]"
+                  @input="
+                    store.updateField(
+                      key as any,
+                      ($event.target as HTMLInputElement).value,
+                    )
+                  "
+                  class="w-full bg-transparent border-b border-slate-100 focus:border-emerald-400 outline-none py-1 text-sm text-slate-600 font-medium transition-all"
+                />
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section
+          class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8"
+        >
+          <div class="flex items-center gap-3 mb-8">
+            <ClipboardList class="w-5 h-5 text-purple-500" />
+            <h2 class="text-xl font-bold text-slate-700">
+              Valoración Geriátrica Integral (Escalas)
+            </h2>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            <div
+              v-for="escala in escalasGeriatricas"
+              :key="escala.key"
+              class="bg-purple-50/50 p-3 rounded-2xl border border-purple-100 text-center"
+            >
+              <label
+                class="block text-[9px] font-black text-purple-600 uppercase mb-2 leading-tight"
+                >{{ escala.label }}</label
+              >
+              <input
+                type="text"
+                :value="store.formData[escala.key]"
+                @input="
+                  store.updateField(
+                    escala.key as any,
+                    ($event.target as HTMLInputElement).value,
+                  )
+                "
+                class="w-full bg-white border-none rounded-lg py-1 text-center font-bold text-purple-700 outline-none focus:ring-2 focus:ring-purple-200"
+                placeholder="-"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8"
+        >
+          <div class="flex items-center gap-3 mb-8">
+            <Activity class="w-5 h-5 text-red-500" />
+            <h2 class="text-xl font-bold text-slate-700">
+              Diagnósticos Multidimensionales
+            </h2>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div
+              v-for="diag in diagnosticosEsferas"
+              :key="diag.key"
+              class="space-y-2 group"
+            >
+              <label
+                class="text-xs font-bold text-slate-400 uppercase ml-2 group-focus-within:text-red-500 transition-colors"
+                >{{ diag.label }}</label
+              >
+              <textarea
+                :value="store.formData[diag.key]"
+                @input="
+                  store.updateField(
+                    diag.key as any,
+                    ($event.target as HTMLTextAreaElement).value,
+                  )
+                "
+                rows="3"
+                class="w-full p-4 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-100 outline-none transition-all text-sm text-slate-600"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="bg-blue-900 rounded-[2rem] p-8 text-white shadow-2xl shadow-blue-900/20"
+        >
+          <div class="flex items-center gap-3 mb-6">
+            <FileText class="w-5 h-5 text-blue-300" />
+            <h2 class="text-xl font-bold">Análisis Clínico Integral</h2>
+          </div>
+          <textarea
+            :value="store.formData.analisisClinicoIntegral"
+            @input="
+              store.updateField(
+                'analisisClinicoIntegral',
+                ($event.target as HTMLTextAreaElement).value,
+              )
+            "
+            rows="8"
+            class="w-full bg-white/10 border border-white/20 rounded-2xl p-6 outline-none focus:bg-white/20 transition-all text-blue-50 leading-relaxed text-sm"
+            placeholder="Redacte aquí el resumen del caso, interpretación de las escalas y pronóstico funcional..."
+          ></textarea>
+        </section>
+
+        <section
+          class="bg-blue-600 rounded-[2rem] p-1 shadow-xl shadow-blue-600/30"
+        >
+          <div class="bg-white rounded-[1.8rem] p-8 space-y-8">
+            <div
+              class="flex flex-col lg:flex-row lg:items-center justify-between gap-8"
+            >
+              <div class="space-y-6 flex-1">
+                <h3
+                  class="text-lg font-bold text-slate-800 underline underline-offset-8 decoration-blue-200"
+                >
+                  Examen Físico y TA
+                </h3>
+                <div class="flex flex-wrap gap-6">
+                  <div
+                    class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-4"
+                  >
+                    <span class="text-xs font-bold text-slate-500 uppercase"
+                      >TA Derecha</span
+                    >
+                    <input
+                      type="text"
+                      :value="store.formData.taDerecha"
+                      @input="
+                        store.updateField(
+                          'taDerecha',
+                          ($event.target as HTMLInputElement).value,
+                        )
+                      "
+                      class="w-16 bg-white border border-slate-200 rounded-lg py-1 text-center font-bold text-blue-600 outline-none"
+                    />
+                  </div>
+                  <div
+                    class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-4"
+                  >
+                    <span class="text-xs font-bold text-slate-500 uppercase"
+                      >TA Izquierda</span
+                    >
+                    <input
+                      type="text"
+                      :value="store.formData.taIzquierda"
+                      @input="
+                        store.updateField(
+                          'taIzquierda',
+                          ($event.target as HTMLInputElement).value,
+                        )
+                      "
+                      class="w-16 bg-white border border-slate-200 rounded-lg py-1 text-center font-bold text-blue-600 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-3 lg:justify-end">
+                <div
+                  v-for="(field, label) in signosVitalesMap"
+                  :key="label"
+                  class="px-6 py-4 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100 flex flex-col items-center"
+                >
+                  <span
+                    class="text-[10px] font-black uppercase opacity-60 tracking-tighter"
+                    >{{ label }}</span
+                  >
+                  <input
+                    type="text"
+                    :value="store.formData[field]"
+                    @input="
+                      store.updateField(
+                        field as any,
+                        ($event.target as HTMLInputElement).value,
+                      )
+                    "
+                    class="w-12 bg-transparent text-center font-bold text-lg outline-none"
+                    placeholder="--"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p
+                class="text-[11px] font-bold text-slate-400 uppercase mb-3 tracking-widest"
+              >
+                Descripción Hallazgos Físicos (Ojos, MMII, Sensorio)
+              </p>
+              <textarea
+                :value="store.formData.descripcionExamenFisico"
+                @input="
+                  store.updateField(
+                    'descripcionExamenFisico',
+                    ($event.target as HTMLTextAreaElement).value,
+                  )
+                "
+                rows="4"
+                class="w-full bg-transparent border-none focus:ring-0 text-slate-600 leading-relaxed text-sm"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100 p-8"
+        >
+          <h2
+            class="text-xl font-bold text-slate-700 mb-8 underline decoration-blue-500 underline-offset-8"
+          >
+            Plan de Manejo y Recomendaciones
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div
+              v-for="recom in recomendacionesCampos"
+              :key="recom.key"
+              class="group space-y-2"
+            >
+              <label
+                class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase ml-1 group-focus-within:text-blue-500 transition-colors"
+              >
+                <component :is="recom.icon" class="w-4 h-4" /> {{ recom.label }}
+              </label>
+              <textarea
+                :value="store.formData[recom.key]"
+                @input="
+                  store.updateField(
+                    recom.key as any,
+                    ($event.target as HTMLTextAreaElement).value,
+                  )
+                "
+                rows="3"
+                class="w-full p-4 rounded-2xl bg-slate-50 border-transparent group-focus-within:bg-white group-focus-within:border-blue-100 focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm text-slate-600"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+
+        <div
+          class="flex flex-col sm:flex-row justify-end items-center gap-4 pt-6"
+        >
+          <button
+            type="button"
+            @click="handleReset"
+            class="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+          >
+            Descartar Cambios
+          </button>
+          <button
+            type="submit"
+            :disabled="store.isLoading"
+            class="w-full sm:w-auto px-12 py-4 rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-xl shadow-blue-600/30 hover:bg-blue-700 hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3"
+          >
+            <Save v-if="!store.isLoading" class="w-5 h-5" />
+            <div
+              v-else
+              class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+            ></div>
+            {{
+              store.isLoading ? "Procesando..." : "Finalizar Registro Integral"
+            }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
+
+<style scoped>
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+div {
+  font-family: "Inter", sans-serif;
+}
+input,
+textarea {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+</style>
