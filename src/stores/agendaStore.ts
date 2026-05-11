@@ -1,95 +1,39 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Cita, EstadoCita, FiltrosCita, VistaCita, ResumenCitas } from '@/Types'
 import { formatFechaCompleta } from '@/utils/format'
 
-const hoy = new Date()
-const mockCitas: Cita[] = [
-  {
-    id: '1',
-    pacienteId: '1',
-    pacienteNombre: 'María García López',
-    fecha: hoy,
-    hora: '08:00',
-    motivo: 'Consulta de control - Hipertensión',
-    estado: 'finalizada'
-  },
-  {
-    id: '2',
-    pacienteId: '2',
-    pacienteNombre: 'Juan Pérez Martínez',
-    fecha: hoy,
-    hora: '09:00',
-    motivo: 'Seguimiento Post-Operatorio',
-    estado: 'finalizada'
-  },
-  {
-    id: '3',
-    pacienteId: '3',
-    pacienteNombre: 'Ana Rodríguez Sánchez',
-    fecha: hoy,
-    hora: '09:30',
-    motivo: 'Revisión de exámenes de laboratorio',
-    estado: 'en_espera'
-  },
-  {
-    id: '4',
-    pacienteId: '4',
-    pacienteNombre: 'Carlos Méndez Torres',
-    fecha: hoy,
-    hora: '10:00',
-    motivo: 'Control de diabetes',
-    estado: 'programada'
-  },
-  {
-    id: '5',
-    pacienteId: '5',
-    pacienteNombre: 'Laura Jiménez Vargas',
-    fecha: hoy,
-    hora: '10:30',
-    motivo: 'Primera consulta - Dolor de espalda',
-    estado: 'programada'
-  },
-  {
-    id: '6',
-    pacienteId: '1',
-    pacienteNombre: 'Roberto Fernández',
-    fecha: hoy,
-    hora: '11:00',
-    motivo: 'Certificado médico',
-    estado: 'cancelada'
-  },
-  {
-    id: '7',
-    pacienteId: '2',
-    pacienteNombre: 'Patricia Núñez',
-    fecha: hoy,
-    hora: '11:30',
-    motivo: 'Evaluación dermatológica',
-    estado: 'programada'
-  },
-  {
-    id: '8',
-    pacienteId: '3',
-    pacienteNombre: 'Miguel Ángel Reyes',
-    fecha: hoy,
-    hora: '14:00',
-    motivo: 'Control mensual - Asma',
-    estado: 'programada'
-  },
-  {
-    id: '9',
-    pacienteId: '4',
-    pacienteNombre: 'Carmen Lucia Díaz',
-    fecha: hoy,
-    hora: '15:00',
-    motivo: 'Renovación de receta médica',
-    estado: 'programada'
+const STORAGE_KEY = 'clinax_citas'
+
+function cargarCitasDeStorage(): Cita[] {
+  const guardado = localStorage.getItem(STORAGE_KEY)
+  if (!guardado) return []
+  
+  try {
+    const citas = JSON.parse(guardado) as Cita[]
+    // Restaurar los objetos Date
+    return citas.map(cita => ({
+      ...cita,
+      fecha: new Date(cita.fecha)
+    }))
+  } catch (e) {
+    console.error("Error al cargar citas de localStorage", e)
+    return []
   }
-]
+}
+
+function guardarCitasEnStorage(citas: Cita[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(citas))
+}
 
 export const useAgendaStore = defineStore('agenda', () => {
-  const citas = ref<Cita[]>(mockCitas)
+  const citas = ref<Cita[]>(cargarCitasDeStorage())
+  
+  // Guardar en localStorage cada vez que haya un cambio
+  watch(citas, (nuevasCitas) => {
+    guardarCitasEnStorage(nuevasCitas)
+  }, { deep: true })
+
   const filtros = ref<FiltrosCita>({
     fecha: new Date(),
     vista: 'dia'
@@ -178,6 +122,8 @@ export const useAgendaStore = defineStore('agenda', () => {
   // ── Nueva función ──────────────────────────────────────────
   function agregarCita(form: {
     pacienteNombre: string
+    edad?: string
+    telefonoCuidador?: string
     fecha: string
     hora: string
     tipo: string
@@ -189,6 +135,8 @@ export const useAgendaStore = defineStore('agenda', () => {
       id: nuevaId,
       pacienteId: crypto.randomUUID(),
       pacienteNombre: form.pacienteNombre,
+      edad: form.edad,
+      telefonoCuidador: form.telefonoCuidador,
       fecha: new Date(form.fecha + 'T00:00:00'),
       hora: form.hora,
       motivo: `${form.tipo} - ${form.motivo}`,

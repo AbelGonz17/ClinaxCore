@@ -27,9 +27,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { id: 'home', label: 'Inicio', icon: Home },
+  { id: 'citas', label: 'Inicio', icon: Home },
+  { id: 'consulta', label: 'Consulta', icon: Stethoscope },
   { id: 'pacientes', label: 'Pacientes', icon: Users },
-  { id: 'citas', label: 'Citas', icon: Calendar },
   { id: 'configuracion', label: 'Configuración', icon: Settings }
 ]
 
