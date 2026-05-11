@@ -59,6 +59,8 @@ export interface Cita {
   pacienteId: string
   pacienteNombre: string
   pacienteAvatar?: string
+  edad?: string
+  telefonoCuidador?: string
   fecha: Date
   hora: string
   motivo: string

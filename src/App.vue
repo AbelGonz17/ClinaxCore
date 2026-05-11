@@ -1,49 +1,49 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/authStore'
-import Sidebar from '@/components/ui/Sidebar.vue'
-import ConsultaForm from '@/components/Inicio/ConsultaForm.vue'
-import PacientesView from '@/views/PacientesView.vue'
-import CitasView from '@/views/CitasView.vue'
-import LoginView from '@/views/LoginView.vue'
+import { ref, onMounted } from "vue";
+import { useAuthStore } from "@/stores/authStore";
+import Sidebar from "@/components/ui/Sidebar.vue";
+import ConsultaForm from "@/components/Consulta/ConsultaForm.vue";
+import PacientesView from "@/views/PacientesView.vue";
+import CitasView from "@/views/CitasView.vue";
+import LoginView from "@/views/LoginView.vue";
 
-const authStore = useAuthStore()
+const authStore = useAuthStore();
 
-const sidebarOpen = ref(false)
-const currentView = ref('home')
-const isTransitioning = ref(false)
+const sidebarOpen = ref(false);
+const currentView = ref("citas");
+const isTransitioning = ref(false);
 
 // Initialize auth on mount
 onMounted(() => {
-  authStore.init()
-})
+  authStore.init();
+});
 
 function toggleSidebar() {
-  sidebarOpen.value = !sidebarOpen.value
+  sidebarOpen.value = !sidebarOpen.value;
 }
 
 function closeSidebar() {
-  sidebarOpen.value = false
+  sidebarOpen.value = false;
 }
 
 function navigateTo(view: string) {
-  currentView.value = view
+  currentView.value = view;
 }
 
 function handleLoginSuccess() {
-  isTransitioning.value = true
+  isTransitioning.value = true;
   setTimeout(() => {
-    isTransitioning.value = false
-  }, 300)
+    isTransitioning.value = false;
+  }, 300);
 }
 
 function handleLogout() {
-  isTransitioning.value = true
-  authStore.logout()
-  currentView.value = 'home'
+  isTransitioning.value = true;
+  authStore.logout();
+  currentView.value = "citas";
   setTimeout(() => {
-    isTransitioning.value = false
-  }, 300)
+    isTransitioning.value = false;
+  }, 300);
 }
 </script>
 
@@ -59,15 +59,28 @@ function handleLogout() {
       <!-- Dashboard (when authenticated) -->
       <div v-else class="min-h-screen">
         <!-- Mobile Header -->
-        <header class="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-neutral-200 px-4 py-3">
+        <header
+          class="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-neutral-200 px-4 py-3"
+        >
           <div class="flex items-center justify-between">
             <button
               @click="toggleSidebar"
               class="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
               aria-label="Abrir menú"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 text-neutral-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
             <h1 class="text-lg font-semibold text-primary-500">ClinaxCore</h1>
@@ -97,17 +110,22 @@ function handleLogout() {
         <main class="lg:ml-64 pt-16 lg:pt-0 min-h-screen">
           <div class="p-4 lg:p-8">
             <Transition name="fade" mode="out-in">
-              <ConsultaForm v-if="currentView === 'home'" />
+              <ConsultaForm v-if="currentView === 'consulta'" />
               <PacientesView
                 v-else-if="currentView === 'pacientes'"
                 @navigate="(view) => navigateTo(view)"
               />
               <CitasView
                 v-else-if="currentView === 'citas'"
-                @navigate="(view) => navigateTo(view === 'consulta' ? 'home' : view)"
+                @navigate="(view) => navigateTo(view)"
               />
-              <div v-else-if="currentView === 'configuracion'" class="text-center py-16">
-                <h2 class="text-2xl font-bold text-neutral-900 mb-2">Configuración</h2>
+              <div
+                v-else-if="currentView === 'configuracion'"
+                class="text-center py-16"
+              >
+                <h2 class="text-2xl font-bold text-neutral-900 mb-2">
+                  Configuración
+                </h2>
                 <p class="text-neutral-500">Próximamente...</p>
               </div>
             </Transition>
@@ -122,7 +140,9 @@ function handleLogout() {
 /* Auth transition */
 .auth-fade-enter-active,
 .auth-fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .auth-fade-enter-from {

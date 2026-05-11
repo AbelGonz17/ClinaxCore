@@ -6,6 +6,7 @@ export interface ConsultaData {
   nombre: string;
   cedula: string;
   edad: string;
+  fechaNacimiento: string;
   sexo: string;
   escolaridad: string;
   ocupacionAnterior: string;
@@ -65,6 +66,7 @@ const initialState: ConsultaData = {
   nombre: "",
   cedula: "",
   edad: "",
+  fechaNacimiento: "",
   sexo: "",
   escolaridad: "",
   ocupacionAnterior: "",
