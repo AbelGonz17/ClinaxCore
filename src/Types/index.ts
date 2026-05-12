@@ -60,6 +60,7 @@ export interface Cita {
   pacienteNombre: string
   pacienteAvatar?: string
   edad?: string
+  sexo?: string
   telefonoCuidador?: string
   fecha: Date
   hora: string

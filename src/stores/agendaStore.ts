@@ -123,6 +123,7 @@ export const useAgendaStore = defineStore('agenda', () => {
   function agregarCita(form: {
     pacienteNombre: string
     edad?: string
+    sexo?: string
     telefonoCuidador?: string
     fecha: string
     hora: string
@@ -136,6 +137,7 @@ export const useAgendaStore = defineStore('agenda', () => {
       pacienteId: crypto.randomUUID(),
       pacienteNombre: form.pacienteNombre,
       edad: form.edad,
+      sexo: form.sexo,
       telefonoCuidador: form.telefonoCuidador,
       fecha: new Date(form.fecha + 'T00:00:00'),
       hora: form.hora,

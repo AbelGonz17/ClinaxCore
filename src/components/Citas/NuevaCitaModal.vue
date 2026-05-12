@@ -12,6 +12,7 @@ const emit = defineEmits<{
 interface NuevaCitaForm {
   pacienteNombre: string;
   edad: string;
+  sexo: string;
   telefonoCuidador: string;
   fecha: string;
   hora: string;
@@ -31,6 +32,7 @@ const tipos = [
 const form = ref<NuevaCitaForm>({
   pacienteNombre: "",
   edad: "",
+  sexo: "",
   telefonoCuidador: "",
   fecha: new Date().toISOString().split("T")[0] || "",
   hora: "09:00",
@@ -74,8 +76,8 @@ function handleSubmit() {
         />
       </div>
 
-      <!-- Edad y Teléfono -->
-      <div class="grid grid-cols-2 gap-4">
+      <!-- Edad, Sexo y Teléfono -->
+      <div class="grid grid-cols-3 gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-xs font-bold uppercase text-slate-500">Edad</label>
           <input
@@ -84,6 +86,17 @@ function handleSubmit() {
             placeholder="Ej: 89"
             class="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-700"
           />
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold uppercase text-slate-500">Sexo</label>
+          <select
+            v-model="form.sexo"
+            class="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-700 bg-white"
+          >
+            <option value="" disabled>Seleccione</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Femenino">Femenino</option>
+          </select>
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-xs font-bold uppercase text-slate-500"
